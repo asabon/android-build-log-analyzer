@@ -1,0 +1,10 @@
+name: 'Android Build Log Analyzer'
+description: 'Analyze Android build logs for errors and warnings'
+author: 'User'
+inputs:
+  log-file-path:
+    description: 'Path to the Android build log file'
+    required: true
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
