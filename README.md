@@ -1,3 +1,5 @@
+[![unit-test](https://github.com/asabon/android-build-log-analyzer/actions/workflows/test.yml/badge.svg?branch=main&event=push)](https://github.com/asabon/android-build-log-analyzer/actions/workflows/test.yml)
+
 # Android Build Log Analyzer
 
 [Japanese (日本語)](./README.ja.md)
