@@ -22,18 +22,6 @@ Add the following step to your workflow, typically after the build step that gen
     log-file-path: 'path/to/your/build.log'
 ```
 
-### Using from Local Repository
-
-If you're using this action from the same repository or a local checkout:
-
-```yaml
-- name: Analyze Build Log
-  uses: ./
-  if: always() # Run even if the build failed
-  with:
-    log-file-path: 'path/to/your/build.log'
-```
-
 ## Inputs
 
 | Input | Description | Required | Default |
@@ -47,19 +35,7 @@ The action parses the provided log file line by line and looks for specific keyw
 - **Error Detection**: Lines containing `error` are reported as **Error** annotations. If at least one error is found, the action will fail.
 - **Warning Detection**: Lines containing `warning` are reported as **Warning** annotations.
 
-## Development
+## Contributing
 
-### Install Dependencies
-```bash
-npm install
-```
+For information on how to build, test, and use this action locally, please refer to [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-### Build
-```bash
-npm run build
-```
-
-### Test
-```bash
-npm test
-```
