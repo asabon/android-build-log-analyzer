@@ -10,6 +10,20 @@ It designed to help developers quickly identify issues in their build process di
 
 Add the following step to your workflow, typically after the build step that generates the log file.
 
+### Using from Marketplace (Recommended)
+
+```yaml
+- name: Analyze Build Log
+  uses: asabon/android-build-log-analyzer@v1
+  if: always() # Run even if the build failed
+  with:
+    log-file-path: 'path/to/your/build.log'
+```
+
+### Using from Local Repository
+
+If you're using this action from the same repository or a local checkout:
+
 ```yaml
 - name: Analyze Build Log
   uses: ./
