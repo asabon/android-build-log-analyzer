@@ -25697,12 +25697,13 @@ async function run() {
         let errorCount = 0;
         let warningCount = 0;
         lines.forEach((line, index) => {
-            const lowerLine = line.toLowerCase();
-            if (lowerLine.includes('error')) {
+            // Use regex with word boundary to avoid partial matches
+            // e.g. "checkKotlinGradlePluginConfigurationErrors" should not match
+            if (/\berror\b/i.test(line)) {
                 core.error(line.trim(), { title: `Line ${index + 1}` });
                 errorCount++;
             }
-            else if (lowerLine.includes('warning')) {
+            else if (/\bwarning\b/i.test(line)) {
                 core.warning(line.trim(), { title: `Line ${index + 1}` });
                 warningCount++;
             }

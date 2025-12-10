@@ -50,4 +50,15 @@ describe('Log Analyzer', () => {
         expect(mockedCore.warning).toHaveBeenCalledWith('Warning: Be careful', expect.anything());
         expect(mockedCore.setFailed).not.toHaveBeenCalled();
     });
+
+    test('should NOT flag Gradle tasks with "Error" in name as actual errors', async () => {
+        (mockedCore.getInput as jest.Mock).mockReturnValue('dummy.log');
+        (mockedFs.existsSync as jest.Mock).mockReturnValue(true);
+        (mockedFs.readFileSync as jest.Mock).mockReturnValue('> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED');
+
+        await run();
+
+        expect(mockedCore.error).not.toHaveBeenCalled();
+        expect(mockedCore.setFailed).not.toHaveBeenCalled();
+    });
 });
