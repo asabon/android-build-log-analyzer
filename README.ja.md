@@ -21,17 +21,7 @@ GitHub Actions の UI 上でビルドプロセスの問題を素早く特定で�
     log-file-path: 'path/to/your/build.log'
 ```
 
-### ローカルリポジトリから使用する場合
 
-同じリポジトリ内またはローカルのチェックアウトから使用する場合:
-
-```yaml
-- name: Analyze Build Log
-  uses: ./
-  if: always() # ビルドが失敗しても実行するようにします
-  with:
-    log-file-path: 'path/to/your/build.log'
-```
 
 ## 入力 (Inputs)
 
@@ -46,19 +36,6 @@ GitHub Actions の UI 上でビルドプロセスの問題を素早く特定で�
 - **エラー検出 (Error Detection)**: `error` を含む行は **Error** アノテーションとして報告されます。エラーが1つでも見つかった場合、このアクションは失敗します。
 - **警告検出 (Warning Detection)**: `warning` を含む行は **Warning** アノテーションとして報告されます。
 
-## 開発 (Development)
+## 開発への参加 (Contributing)
 
-### 依存関係のインストール
-```bash
-npm install
-```
-
-### ビルド
-```bash
-npm run build
-```
-
-### テスト
-```bash
-npm test
-```
+ビルド、テスト、ローカルでの使用方法などの詳細については、[CONTRIBUTING.ja.md](./CONTRIBUTING.ja.md) を参照してください。
