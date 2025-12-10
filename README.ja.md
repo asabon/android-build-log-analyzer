@@ -9,6 +9,20 @@ GitHub Actions の UI 上でビルドプロセスの問題を素早く特定で�
 
 ワークフロー内で、通常はログファイルを生成するビルドステップの後に、以下のステップを追加してください。
 
+### Marketplace から使用する場合 (推奨)
+
+```yaml
+- name: Analyze Build Log
+  uses: asabon/android-build-log-analyzer@v1
+  if: always() # ビルドが失敗しても実行するようにします
+  with:
+    log-file-path: 'path/to/your/build.log'
+```
+
+### ローカルリポジトリから使用する場合
+
+同じリポジトリ内またはローカルのチェックアウトから使用する場合:
+
 ```yaml
 - name: Analyze Build Log
   uses: ./
