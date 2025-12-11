@@ -11,7 +11,6 @@ GitHub Actions の UI 上でビルドプロセスの問題を素早く特定で�
 
 ワークフロー内で、通常はログファイルを生成するビルドステップの後に、以下のステップを追加してください。
 
-### Marketplace から使用する場合 (推奨)
 
 ```yaml
 - name: Analyze Build Log
@@ -28,6 +27,7 @@ GitHub Actions の UI 上でビルドプロセスの問題を素早く特定で�
 | 入力 | 説明 | 必須 | デフォルト |
 | :--- | :--- | :--- | :--- |
 | `log-file-path` | 解析対象の Android ビルドログファイルのパス。 | **はい** | なし |
+| `report-path` | 解析レポート（Markdown 形式）を保存するパス。 | いいえ | なし |
 
 ## 動作 (Behavior)
 

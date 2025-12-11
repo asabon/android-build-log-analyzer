@@ -12,7 +12,6 @@ It designed to help developers quickly identify issues in their build process di
 
 Add the following step to your workflow, typically after the build step that generates the log file.
 
-### Using from Marketplace (Recommended)
 
 ```yaml
 - name: Analyze Build Log
@@ -27,6 +26,7 @@ Add the following step to your workflow, typically after the build step that gen
 | Input | Description | Required | Default |
 | :--- | :--- | :--- | :--- |
 | `log-file-path` | The path to the Android build log file to analyze. | **Yes** | N/A |
+| `report-path` | The path to save the analysis report in Markdown format. | No | N/A |
 
 ## Behavior
 
