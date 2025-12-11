@@ -1,6 +1,6 @@
 {
   "name": "android-build-log-analyzer",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Android build log analyzer for GitHub Actions",
   "main": "dist/index.js",
   "scripts": {
