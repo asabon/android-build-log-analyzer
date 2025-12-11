@@ -7,7 +7,11 @@ jest.mock('@actions/core', () => ({
     setFailed: jest.fn(),
     error: jest.fn(),
     warning: jest.fn(),
-    info: jest.fn()
+    info: jest.fn(),
+    summary: {
+        addRaw: jest.fn().mockReturnThis(),
+        write: jest.fn()
+    }
 }));
 
 jest.mock('fs');
@@ -21,7 +25,10 @@ describe('Log Analyzer', () => {
     });
 
     test('should fail if log file does not exist', async () => {
-        (mockedCore.getInput as jest.Mock).mockReturnValue('dummy.log');
+        (mockedCore.getInput as jest.Mock).mockImplementation((name) => {
+            if (name === 'log-file-path') return 'dummy.log';
+            return '';
+        });
         (mockedFs.existsSync as jest.Mock).mockReturnValue(false);
 
         await run();
@@ -30,7 +37,10 @@ describe('Log Analyzer', () => {
     });
 
     test('should detect errors in log file', async () => {
-        (mockedCore.getInput as jest.Mock).mockReturnValue('dummy.log');
+        (mockedCore.getInput as jest.Mock).mockImplementation((name) => {
+            if (name === 'log-file-path') return 'dummy.log';
+            return '';
+        });
         (mockedFs.existsSync as jest.Mock).mockReturnValue(true);
         (mockedFs.readFileSync as jest.Mock).mockReturnValue('Normal line\nError: Something bad happened\nAnother line');
 
@@ -41,7 +51,10 @@ describe('Log Analyzer', () => {
     });
 
     test('should detect warnings in log file', async () => {
-        (mockedCore.getInput as jest.Mock).mockReturnValue('dummy.log');
+        (mockedCore.getInput as jest.Mock).mockImplementation((name) => {
+            if (name === 'log-file-path') return 'dummy.log';
+            return '';
+        });
         (mockedFs.existsSync as jest.Mock).mockReturnValue(true);
         (mockedFs.readFileSync as jest.Mock).mockReturnValue('Normal line\nWarning: Be careful\nAnother line');
 
@@ -52,7 +65,10 @@ describe('Log Analyzer', () => {
     });
 
     test('should NOT flag Gradle tasks with "Error" in name as actual errors', async () => {
-        (mockedCore.getInput as jest.Mock).mockReturnValue('dummy.log');
+        (mockedCore.getInput as jest.Mock).mockImplementation((name) => {
+            if (name === 'log-file-path') return 'dummy.log';
+            return '';
+        });
         (mockedFs.existsSync as jest.Mock).mockReturnValue(true);
         (mockedFs.readFileSync as jest.Mock).mockReturnValue('> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED');
 
