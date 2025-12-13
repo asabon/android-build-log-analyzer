@@ -1,3 +1,9 @@
 node_modules/
 coverage/
 .DS_Store
+
+# personal config file for antigravity
+.agent/config.yml
+
+# work directory for antigravity
+.agent/work
