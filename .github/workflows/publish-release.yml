@@ -1,0 +1,54 @@
+name: Update Major Tag
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-major-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update Major Tag
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const tagName = context.payload.release.tag_name;
+            // e.g., v1.0.1 -> v1
+            // Check if tag starts with 'v' and has valid format
+            if (!tagName.match(/^v\d+\.\d+\.\d+$/)) {
+              console.log(`Tag ${tagName} does not match format vX.Y.Z. Skipping major tag update.`);
+              return;
+            }
+            
+            const majorVersion = tagName.split('.')[0];
+            const { owner, repo } = context.repo;
+
+            console.log(`Updating ${majorVersion} to point to ${tagName} (${context.sha})`);
+
+            try {
+              // Try to update existing tag
+              await github.rest.git.updateRef({
+                owner,
+                repo,
+                ref: `tags/${majorVersion}`,
+                sha: context.sha,
+                force: true
+              });
+              console.log(`Updated ${majorVersion}`);
+            } catch (e) {
+              console.log(`Tag ${majorVersion} not found, creating new one.`);
+              // Create new tag if it doesn't exist
+              await github.rest.git.createRef({
+                owner,
+                repo,
+                ref: `refs/tags/${majorVersion}`,
+                sha: context.sha
+              });
+              console.log(`Created ${majorVersion}`);
+            }

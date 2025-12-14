@@ -1,0 +1,96 @@
+name: Bump Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version (e.g., 1.0.2). Leave empty to use the version from the latest Draft Release.'
+        required: false
+        type: string
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine Version
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          INPUT_VERSION="${{ inputs.version }}"
+          
+          if [ -n "$INPUT_VERSION" ]; then
+            echo "Using input version: $INPUT_VERSION"
+            echo "final_version=$INPUT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "No input version provided. Fetching latest draft release..."
+            # Get the latest draft release tag_name
+            DRAFT_VERSION=$(gh release list --limit 1 --exclude-drafts=false --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName')
+            
+            # If no draft found or tagName is empty, try extracting from name-template equivalent if needed, but standard release-drafter uses tagName.
+            # Assuming release-drafter has run and set a tag like v1.0.2
+            
+            if [ -z "$DRAFT_VERSION" ]; then
+              echo "Error: No draft release found to auto-detect version from."
+              exit 1
+            fi
+            
+            # Remove 'v' prefix if present for npm version
+            CLEAN_VERSION="${DRAFT_VERSION#v}"
+            
+            echo "Detected draft version: $DRAFT_VERSION (clean: $CLEAN_VERSION)"
+            echo "final_version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update package.json
+        run: |
+          npm version ${{ steps.version.outputs.final_version }} --no-git-tag-version
+
+      - name: Update READMEs (Major Version)
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.final_version }}"
+          MAJOR_VERSION=$(echo "$NEW_VERSION" | cut -d. -f1)
+          
+          # Replace uses: ...@vX with uses: ...@v<new_major>
+          # Matches: uses: owner/repo@v[digits] or uses: owner/repo@v[digits].[digits].[digits]
+          # Adapted for android-build-log-analyzer
+          
+          perl -i -pe "s/(uses: asabon\/android-build-log-analyzer\@v)[0-9]+(\.[0-9]+\.[0-9]+)?/\${1}${MAJOR_VERSION}/g" README.md
+          perl -i -pe "s/(uses: asabon\/android-build-log-analyzer\@v)[0-9]+(\.[0-9]+\.[0-9]+)?/\${1}${MAJOR_VERSION}/g" README.ja.md
+          
+          echo "Updated READMEs to point to v${MAJOR_VERSION}"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: bump version to ${{ steps.version.outputs.final_version }}"
+          title: "chore: bump version to ${{ steps.version.outputs.final_version }}"
+          body: |
+            This PR bumps the version to **${{ steps.version.outputs.final_version }}**.
+            
+            - `package.json` updated.
+            - `README` usage examples updated (if major version changed).
+            
+            Please review and merge this PR to prepare for release.
+          branch: "release/v${{ steps.version.outputs.final_version }}"
+          base: "main"
+          delete-branch: true
