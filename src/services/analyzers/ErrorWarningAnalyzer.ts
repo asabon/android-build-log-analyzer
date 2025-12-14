@@ -17,10 +17,11 @@ export class ErrorWarningAnalyzer implements Analyzer {
             const lineNum = index + 1;
             let type: 'Error' | 'Warning' | null = null;
 
-            // Use regex with word boundary to avoid partial matches
-            if (/\berror\b/i.test(line)) {
+            // Regex tweaks to catch "e:" (Kotlin), "Error:", "w:" (Kotlin), "Warning:"
+            // and keep word boundary for standard text.
+            if (/(\berror\b|^e:)/i.test(line)) {
                 type = 'Error';
-            } else if (/\bwarning\b/i.test(line)) {
+            } else if (/(\bwarning\b|^w:)/i.test(line)) {
                 type = 'Warning';
             }
 
