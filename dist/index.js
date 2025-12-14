@@ -25685,6 +25685,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
 const fs = __importStar(__nccwpck_require__(9896));
+const BuildLogAnalyzer_1 = __nccwpck_require__(8682);
+const ErrorWarningAnalyzer_1 = __nccwpck_require__(7750);
+const BuildTimeAnalyzer_1 = __nccwpck_require__(8263);
 async function run() {
     try {
         const logFilePath = core.getInput('log-file-path');
@@ -25693,49 +25696,24 @@ async function run() {
             throw new Error(`Log file not found at: ${logFilePath}`);
         }
         const content = fs.readFileSync(logFilePath, 'utf-8');
-        const lines = content.split('\n');
-        const issues = [];
-        lines.forEach((line, index) => {
-            // Use regex with word boundary to avoid partial matches
-            // e.g. "checkKotlinGradlePluginConfigurationErrors" should not match
-            if (/\berror\b/i.test(line)) {
-                core.error(line.trim(), { title: `Line ${index + 1}` });
-                issues.push({ type: 'Error', message: line.trim(), line: index + 1 });
-            }
-            else if (/\bwarning\b/i.test(line)) {
-                core.warning(line.trim(), { title: `Line ${index + 1}` });
-                issues.push({ type: 'Warning', message: line.trim(), line: index + 1 });
-            }
-        });
-        const errorCount = issues.filter(i => i.type === 'Error').length;
-        const warningCount = issues.filter(i => i.type === 'Warning').length;
-        core.info(`Analysis complete. Found ${errorCount} errors and ${warningCount} warnings.`);
-        // Generate Markdown Report
-        let markdown = `## Android Build Log Analysis\n\n`;
-        markdown += `Found **${errorCount}** errors and **${warningCount}** warnings.\n\n`;
-        if (issues.length > 0) {
-            markdown += `| Type | Line | Message |\n`;
-            markdown += `| :--- | :--- | :--- |\n`;
-            issues.forEach(issue => {
-                const icon = issue.type === 'Error' ? '🛑' : '⚠️';
-                // Escape pipes in message to prevent breaking the table
-                const safeMessage = issue.message.replace(/\|/g, '\\|');
-                markdown += `| ${icon} ${issue.type} | ${issue.line} | \`${safeMessage}\` |\n`;
-            });
-        }
-        else {
-            markdown += `✅ No errors or warnings found.\n`;
-        }
+        const analyzer = new BuildLogAnalyzer_1.BuildLogAnalyzer();
+        // Add analyzers - order matters for report appearance
+        analyzer.addAnalyzer(new BuildTimeAnalyzer_1.BuildTimeAnalyzer());
+        analyzer.addAnalyzer(new ErrorWarningAnalyzer_1.ErrorWarningAnalyzer());
+        const result = analyzer.analyze(content);
         // Output to Job Summary
-        await core.summary.addRaw(markdown).write();
+        await core.summary.addRaw(result.fullReport).write();
         // Output to Report File if path is specified
         const reportPath = core.getInput('report-path');
         if (reportPath) {
-            fs.writeFileSync(reportPath, markdown);
+            fs.writeFileSync(reportPath, result.fullReport);
             core.info(`Report saved to: ${reportPath}`);
         }
-        if (errorCount > 0) {
-            core.setFailed(`Found ${errorCount} errors in the build log.`);
+        if (result.isFailed) {
+            core.setFailed(result.failureMessage || 'Build analysis failed with errors.');
+        }
+        else {
+            core.info('Build analysis completed successfully.');
         }
     }
     catch (error) {
@@ -25743,6 +25721,234 @@ async function run() {
             core.setFailed(error.message);
     }
 }
+
+
+/***/ }),
+
+/***/ 8682:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BuildLogAnalyzer = void 0;
+class BuildLogAnalyzer {
+    constructor() {
+        this.analyzers = [];
+    }
+    addAnalyzer(analyzer) {
+        this.analyzers.push(analyzer);
+    }
+    analyze(logContent) {
+        const lines = logContent.split('\n');
+        const results = [];
+        let combinedMarkdown = '## Android Build Log Analysis\n\n';
+        let isFailed = false; // logic changes slightly, see logic below
+        let failureMessages = [];
+        for (const analyzer of this.analyzers) {
+            try {
+                const result = analyzer.analyze(lines);
+                results.push(result);
+                combinedMarkdown += result.markdown + '\n';
+                if (result.isFailed) {
+                    isFailed = true;
+                    if (result.failureMessage) {
+                        failureMessages.push(result.failureMessage);
+                    }
+                }
+            }
+            catch (err) {
+                console.error(`Analyzer failed`, err);
+                combinedMarkdown += `\n> [!ERROR]\n> Analyzer failed: ${err}\n`;
+            }
+        }
+        const failureMessage = failureMessages.length > 0 ? failureMessages.join(', ') : '';
+        return { results, fullReport: combinedMarkdown, isFailed, failureMessage };
+    }
+}
+exports.BuildLogAnalyzer = BuildLogAnalyzer;
+
+
+/***/ }),
+
+/***/ 8263:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BuildTimeAnalyzer = void 0;
+class BuildTimeAnalyzer {
+    analyze(lines) {
+        const tasks = [];
+        let totalTime = 'Unknown';
+        // Regex for Task lines: > Task :app:assembleDebug UP-TO-DATE
+        // capturing: name, outcome (optional)
+        const taskRegex = /> Task ([^\s]+)\s*([A-Z-]+)?/;
+        // Regex for Build Duration: BUILD SUCCESSFUL in 2m 3s
+        // Note: It might be "BUILD FAILED" too.
+        const buildResultRegex = /BUILD (SUCCESSFUL|FAILED) in (.*)/;
+        lines.forEach(line => {
+            const taskMatch = line.match(taskRegex);
+            if (taskMatch) {
+                const name = taskMatch[1];
+                const outcome = taskMatch[2] || 'EXECUTED';
+                tasks.push({ name, outcome });
+            }
+            const resultMatch = line.match(buildResultRegex);
+            if (resultMatch) {
+                totalTime = resultMatch[2].trim();
+            }
+        });
+        const executed = tasks.filter(t => t.outcome === 'EXECUTED').length;
+        const upToDate = tasks.filter(t => t.outcome === 'UP-TO-DATE').length;
+        const skipped = tasks.filter(t => t.outcome === 'SKIPPED').length;
+        const fromCache = tasks.filter(t => t.outcome === 'FROM-CACHE').length;
+        // Gradle 8.0+ configuration cache lines might differ, but this is a good start.
+        let markdown = `### Build Performance Summary\n\n`;
+        markdown += `- **Total Build Time**: ${totalTime}\n`;
+        markdown += `- **Total Tasks**: ${tasks.length}\n`;
+        markdown += `  - Executed: ${executed}\n`;
+        markdown += `  - CACHED / UP-TO-DATE: ${fromCache + upToDate}\n`;
+        markdown += `  - SKIPPED: ${skipped}\n\n`;
+        // If we had per-task timing, we would list top 5 here.
+        // For now, standard logs don't guarantee this, so we omit unless we implement timestamp diffing (complex).
+        // Feature expansion usage: analyzing timestamps if lines start with them.
+        return {
+            name: 'Build Performance',
+            markdown: markdown,
+            isFailed: false // Performance stats usually don't fail the build analysis itself
+        };
+    }
+}
+exports.BuildTimeAnalyzer = BuildTimeAnalyzer;
+
+
+/***/ }),
+
+/***/ 7750:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ErrorWarningAnalyzer = void 0;
+const core = __importStar(__nccwpck_require__(7484));
+class ErrorWarningAnalyzer {
+    analyze(lines) {
+        const issuesMap = new Map();
+        let errorCount = 0;
+        let warningCount = 0;
+        lines.forEach((line, index) => {
+            const lineNum = index + 1;
+            let type = null;
+            // Use regex with word boundary to avoid partial matches
+            if (/\berror\b/i.test(line)) {
+                type = 'Error';
+            }
+            else if (/\bwarning\b/i.test(line)) {
+                type = 'Warning';
+            }
+            if (type) {
+                const message = line.trim();
+                const existing = issuesMap.get(message);
+                if (existing) {
+                    if (existing.type === type) { // only group if type matches (unlikely to differ for same message)
+                        existing.lines.push(lineNum);
+                    }
+                    else {
+                        // Should technically treat as new if type differs, but message is same? 
+                        // Let's just create a unique key if we really care, but message is likely unique enough.
+                        // For simplicity, just update.
+                        existing.lines.push(lineNum);
+                    }
+                }
+                else {
+                    issuesMap.set(message, {
+                        type: type,
+                        message: message,
+                        lines: [lineNum]
+                    });
+                }
+                if (type === 'Error') {
+                    core.error(message, { title: `Line ${lineNum}` });
+                    errorCount++;
+                }
+                else {
+                    core.warning(message, { title: `Line ${lineNum}` });
+                    warningCount++;
+                }
+            }
+        });
+        // Generate Markdown
+        let markdown = `### Error and Warning Analysis\n\n`;
+        markdown += `Found **${errorCount}** errors and **${warningCount}** warnings.\n\n`;
+        if (issuesMap.size > 0) {
+            markdown += `| Type | Lines | Message |\n`;
+            markdown += `| :--- | :--- | :--- |\n`;
+            // Convert map to array and sort errors first
+            const sortedIssues = Array.from(issuesMap.values()).sort((a, b) => {
+                if (a.type === b.type)
+                    return 0;
+                return a.type === 'Error' ? -1 : 1;
+            });
+            sortedIssues.forEach(issue => {
+                const icon = issue.type === 'Error' ? '🛑' : '⚠️';
+                const safeMessage = issue.message.replace(/\|/g, '\\|');
+                // Format lines: "1, 5, 10" or "1 (x5)" if too many?
+                // Let's list up to 3, then "and N others"
+                let lineStr = issue.lines.join(', ');
+                if (issue.lines.length > 5) {
+                    lineStr = `${issue.lines.slice(0, 3).join(', ')} ... and ${issue.lines.length - 3} others`;
+                }
+                markdown += `| ${icon} ${issue.type} | ${lineStr} | \`${safeMessage}\` |\n`;
+            });
+        }
+        else {
+            markdown += `✅ No errors or warnings found.\n`;
+        }
+        return {
+            name: 'Error and Warning Analysis',
+            markdown: markdown,
+            isFailed: errorCount > 0,
+            failureMessage: errorCount > 0 ? `Found ${errorCount} errors in the build log.` : undefined
+        };
+    }
+}
+exports.ErrorWarningAnalyzer = ErrorWarningAnalyzer;
 
 
 /***/ }),
