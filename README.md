@@ -15,7 +15,7 @@ Add the following step to your workflow, typically after the build step that gen
 
 ```yaml
 - name: Analyze Build Log
-  uses: asabon/android-build-log-analyzer@v1
+  uses: asabon/android-build-log-analyzer@v0
   if: always() # Run even if the build failed
   with:
     log-file-path: 'path/to/your/build.log'

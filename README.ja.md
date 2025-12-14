@@ -14,7 +14,7 @@ GitHub Actions の UI 上でビルドプロセスの問題を素早く特定で�
 
 ```yaml
 - name: Analyze Build Log
-  uses: asabon/android-build-log-analyzer@v1
+  uses: asabon/android-build-log-analyzer@v0
   if: always() # ビルドが失敗しても実行するようにします
   with:
     log-file-path: 'path/to/your/build.log'
