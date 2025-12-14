@@ -91,12 +91,31 @@ jobs:
           script: |
             const fs = require('fs');
             const reportContent = fs.readFileSync('examples/report.md', 'utf8');
+            const header = '### 📊 Demo Report Preview';
+            const body = `${header}\n\n${reportContent}`;
             
-            const body = `### 📊 Demo Report Preview\n\n${reportContent}`;
-            
-            github.rest.issues.createComment({
+            const comments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: body
             });
+
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && comment.body.startsWith(header)
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
