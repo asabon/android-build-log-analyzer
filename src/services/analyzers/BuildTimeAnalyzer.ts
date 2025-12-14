@@ -11,9 +11,10 @@ export class BuildTimeAnalyzer implements Analyzer {
         const tasks: TaskInfo[] = [];
         let totalTime = 'Unknown';
 
-        // Regex for Task lines: > Task :app:assembleDebug UP-TO-DATE
-        // capturing: name, outcome (optional)
-        const taskRegex = /> Task ([^\s]+)\s*([A-Z-]+)?/;
+        // Regex for Task lines: 
+        // > Task :app:assembleDebug UP-TO-DATE
+        // or just ":app:preBuild UP-TO-DATE" (depending on console mode)
+        const taskRegex = /(?:> Task )?(:[^\s]+)\s*([A-Z-]+)?/;
 
         // Regex for Build Duration: BUILD SUCCESSFUL in 2m 3s
         // Note: It might be "BUILD FAILED" too.

@@ -15,17 +15,28 @@ describe('ErrorWarningAnalyzer', () => {
     test('should group identical errors', () => {
         const lines = [
             'Error: Identical error',
+            'e: /path/One.kt: (1,1): Identical error',
             'Some log line',
             'Error: Identical error'
         ];
 
+        // Note: currently implementation groups by exact message content.
         const result = analyzer.analyze(lines);
 
-        // Check Markdown contains grouping
-        expect(result.markdown).toContain('| 🛑 Error | 1, 3 | `Error: Identical error` |');
+        // Check Markdown contains grouping for exact matches
+        expect(result.markdown).toContain('| 🛑 Error | 1, 4 | `Error: Identical error` |');
 
-        // Assert annotations are still made for each occurrence (or maybe we change this future, but currently present)
-        expect(core.error).toHaveBeenCalledTimes(2);
+        // Check Kotlin error detection
+        expect(result.markdown).toContain('| 🛑 Error | 2 | `e: /path/One.kt: (1,1): Identical error` |');
+
+        // Assert annotations are still made for each occurrence
+        expect(core.error).toHaveBeenCalledTimes(3);
+    });
+
+    test('should detect kotlin warnings', () => {
+        const lines = ['w: /path/Warning.kt: (1,1): Warning message'];
+        const result = analyzer.analyze(lines);
+        expect(result.markdown).toContain('| ⚠️ Warning | 1 | `w: /path/Warning.kt: (1,1): Warning message` |');
     });
 
     test('should distinct errors', () => {
@@ -58,10 +69,10 @@ describe('BuildTimeAnalyzer', () => {
 
     test('should count task outcomes', () => {
         const lines = [
-            '> Task :t1 UP-TO-DATE',
-            '> Task :t2 SKIPPED',
+            ':t1 UP-TO-DATE', // No > Task prefix
+            '> Task :t2 SKIPPED', // With prefix
             '> Task :t3', // Executed
-            '> Task :t4 FROM-CACHE'
+            ':t4 FROM-CACHE' // No prefix
         ];
         const result = analyzer.analyze(lines);
 

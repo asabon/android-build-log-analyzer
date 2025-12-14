@@ -8,6 +8,9 @@
 This GitHub Action analyzes Android build logs to detect and annotate errors and warnings.
 It designed to help developers quickly identify issues in their build process directly within the GitHub Actions UI.
 
+<!-- START_DEMO_REPORT -->
+<!-- END_DEMO_REPORT -->
+
 ## Usage
 
 Add the following step to your workflow, typically after the build step that generates the log file.

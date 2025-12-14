@@ -25782,9 +25782,10 @@ class BuildTimeAnalyzer {
     analyze(lines) {
         const tasks = [];
         let totalTime = 'Unknown';
-        // Regex for Task lines: > Task :app:assembleDebug UP-TO-DATE
-        // capturing: name, outcome (optional)
-        const taskRegex = /> Task ([^\s]+)\s*([A-Z-]+)?/;
+        // Regex for Task lines: 
+        // > Task :app:assembleDebug UP-TO-DATE
+        // or just ":app:preBuild UP-TO-DATE" (depending on console mode)
+        const taskRegex = /(?:> Task )?(:[^\s]+)\s*([A-Z-]+)?/;
         // Regex for Build Duration: BUILD SUCCESSFUL in 2m 3s
         // Note: It might be "BUILD FAILED" too.
         const buildResultRegex = /BUILD (SUCCESSFUL|FAILED) in (.*)/;
@@ -25875,11 +25876,12 @@ class ErrorWarningAnalyzer {
         lines.forEach((line, index) => {
             const lineNum = index + 1;
             let type = null;
-            // Use regex with word boundary to avoid partial matches
-            if (/\berror\b/i.test(line)) {
+            // Regex tweaks to catch "e:" (Kotlin), "Error:", "w:" (Kotlin), "Warning:"
+            // and keep word boundary for standard text.
+            if (/(\berror\b|^e:)/i.test(line)) {
                 type = 'Error';
             }
-            else if (/\bwarning\b/i.test(line)) {
+            else if (/(\bwarning\b|^w:)/i.test(line)) {
                 type = 'Warning';
             }
             if (type) {
