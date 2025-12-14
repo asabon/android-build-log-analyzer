@@ -1,0 +1,24 @@
+:app:preBuild UP-TO-DATE
+:app:preDebugBuild UP-TO-DATE
+:app:mergeDebugResources UP-TO-DATE
+:app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:compileDebugJavaWithJavac
+> Task :app:compileDebugKotlin
+e: /path/to/MainActivity.kt: (10, 20): Unresolved reference: User
+> Task :app:processDebugResources
+> Task :app:compileDebugKotlin FAILED
+e: /path/to/MainActivity.kt: (10, 20): Unresolved reference: User
+w: /path/to/Utils.kt: (5, 12): Parameter 'context' is never used
+w: /path/to/Utils.kt: (5, 12): Parameter 'context' is never used
+w: /path/to/Other.kt: (8, 1): Deprecated usage
+> Task :app:assembleDebug
+> Task :app:signDebugBundle
+> Task :app:bundleDebug
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> Compilation error. See log for more details
+
+BUILD FAILED in 12s
