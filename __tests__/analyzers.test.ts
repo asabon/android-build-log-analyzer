@@ -48,6 +48,20 @@ describe('ErrorWarningAnalyzer', () => {
         expect(result.markdown).toContain('| 🛑 Error | 1 | `Error: A` |');
         expect(result.markdown).toContain('| 🛑 Error | 2 | `Error: B` |');
     });
+
+    test('should NOT flag Gradle welcome message as error', () => {
+        const lines = [
+            'Welcome to Gradle 9.3.1!',
+            '',
+            'Here are the highlights of this release:',
+            ' - Test reporting improvements',
+            ' - Error and warning improvements',
+            ' - Build authoring improvements'
+        ];
+        const result = analyzer.analyze(lines);
+        expect(result.isFailed).toBe(false);
+        expect(result.markdown).toContain('✅ No errors or warnings found.');
+    });
 });
 
 describe('BuildTimeAnalyzer', () => {
