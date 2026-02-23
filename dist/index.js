@@ -25876,12 +25876,15 @@ class ErrorWarningAnalyzer {
         lines.forEach((line, index) => {
             const lineNum = index + 1;
             let type = null;
-            // Regex tweaks to catch "e:" (Kotlin), "Error:", "w:" (Kotlin), "Warning:"
-            // and keep word boundary for standard text.
-            if (/(\berror\b|^e:)/i.test(line)) {
+            // Refined regex to avoid false positives (e.g., Gradle welcome message)
+            // - Error: (starts with Error followed by colon)
+            // - e: (starts with e followed by colon, common in Kotlin)
+            // - w: (starts with w followed by colon, common in Kotlin)
+            // - Warning: (starts with Warning followed by colon)
+            if (/^(\s*(Error|error):|^e:)/i.test(line)) {
                 type = 'Error';
             }
-            else if (/(\bwarning\b|^w:)/i.test(line)) {
+            else if (/^(\s*(Warning|warning):|^w:)/i.test(line)) {
                 type = 'Warning';
             }
             if (type) {

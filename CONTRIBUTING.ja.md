@@ -24,6 +24,9 @@ npm install
 npm run build
 ```
 
+> [!IMPORTANT]
+> このプロジェクトは GitHub Action であるため、`dist/` ディレクトリにビルド済みの実行コードが含まれています。**ソースコードを修正した後は、必ず `npm run build` を実行し、`dist/` ディレクトリの変更をコミットしてください。**
+
 ### テスト
 ```bash
 npm test
