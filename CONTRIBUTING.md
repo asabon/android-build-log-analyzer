@@ -24,6 +24,9 @@ npm install
 npm run build
 ```
 
+> [!IMPORTANT]
+> Since this project is a GitHub Action, the `dist/` directory contains the compiled code that is executed. **You must run `npm run build` and commit the changes in the `dist/` directory** whenever you modify the source code.
+
 ### Test
 ```bash
 npm test
