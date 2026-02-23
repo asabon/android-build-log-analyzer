@@ -23,12 +23,11 @@ It designed to help developers quickly identify issues in their build process di
 
 ### Error and Warning Analysis
 
-Found **3** errors and **3** warnings.
+Found **2** errors and **3** warnings.
 
 | Type | Lines | Message |
 | :--- | :--- | :--- |
 | 🛑 Error | 7, 10 | `e: /path/to/MainActivity.kt: (10, 20): Unresolved reference: User` |
-| 🛑 Error | 22 | `> Compilation error. See log for more details` |
 | ⚠️ Warning | 11, 12 | `w: /path/to/Utils.kt: (5, 12): Parameter 'context' is never used` |
 | ⚠️ Warning | 13 | `w: /path/to/Other.kt: (8, 1): Deprecated usage` |
 
